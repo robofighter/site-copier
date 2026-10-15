@@ -123,6 +123,7 @@ BADGE_CSS = """<style id="hide-framer-badge">
 #__framer-badge-container,
 [data-framer-name="Made in Framer"],
 [data-framer-name="Template Buy Button"],
+[data-framer-name="Buy Template Module"],
 [data-framer-name="Payments Secured By"],
 [data-framer-name="Get Template"],
 [data-framer-name="Get Template Button"],
@@ -147,6 +148,21 @@ a[href*="lemonsqueezy.com/checkout"],
 BADGE_JS = """<script id="hide-framer-badge-js">
 (function(){
   var NAME_RX = /(remix|buy\\s*template|get\\s*template|see\\s*what'?s\\s*inside|made\\s*in\\s*framer|secured\\s*by|template\\s*buy|template\\s*badge|unlock\\s*from)/i;
+  // Признаки промо-кнопки внутри модуля: «Buy Now», «from $99», чекаут.
+  // Нужны для случая, когда САМ модуль промо широкий (во всю ширину) и не
+  // проходит размерную защиту, а видимый бейдж внутри имеет нейтральное
+  // имя вроде «Button Wrapper» (реальный случай: precept.framer.website —
+  // модуль 1440×0 с кнопкой «Precept™ from $99 Buy Now» внутри).
+  var PROMO_TEXT_RX = /(buy\\s*now|add\\s*to\\s*cart|checkout|from\\s*\\$\\d|lemonsqueezy|gumroad|payhip|unlock\\s*from)/i;
+  function hasPromoText(el){
+    if (!el.querySelectorAll) return false;
+    var all = el.querySelectorAll('*');
+    for (var i = 0; i < all.length; i++) {
+      var t = (all[i].textContent || '').trim();
+      if (t.length > 0 && t.length <= 80 && PROMO_TEXT_RX.test(t)) return true;
+    }
+    return false;
+  }
   function hide(el){
     if (!el || !el.style) return;
     el.style.setProperty('display','none','important');
@@ -165,7 +181,13 @@ BADGE_JS = """<script id="hide-framer-badge-js">
     var txt = (el.textContent || '').trim();
     if (txt.length > 220) return false;
     var r = el.getBoundingClientRect();
-    if (r.width > 420 || r.height > 420) return false;
+    if (r.width > 420 || r.height > 420) {
+      // Большой блок с именем промо-модуля — прячем только если внутри
+      // явный призыв купить (кнопка «Buy Now», «from $99», ссылка на
+      // чекаут). Иначе это может быть обычная секция страницы, её
+      // трогать нельзя.
+      return hasPromoText(el);
+    }
     return true;
   }
   function sweep(root){
