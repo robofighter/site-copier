@@ -287,6 +287,19 @@ Module"` во всю ширину страницы, а видимая кнопк
 «Внешн.» — запросы на сторонние сервера; «Промо» — бейджи Framer, включая
 кнопки покупки шаблона.
 
+## 📣 Продвижение
+
+**Топики GitHub** — уже проставлены на репозитории, по ним проект находят через поиск GitHub:
+
+`framer` · `framer-website` · `framer-template` · `website-copier` · `site-downloader` · `website-cloner` · `web-archiving` · `browsertrix` · `webrecorder` · `static-site` · `docker` · `python` · `web-crawler` · `web-scraping` · `self-hosted` · `site-backup` · `web-archive` · `offline-first`
+
+**Хештеги для постов** (X/Twitter, Reddit, Telegram, VC):
+
+```
+#framer #framerwebsite #webdev #python #docker #opensource
+#webarchiving #staticwebsite #selfhosted #копированиесайтов #верстка
+```
+
 <div align="center">
 
 **Панель · ZIP · автономная копия — всё локально, без подписок**

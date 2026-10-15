@@ -279,6 +279,19 @@ site-copier/
 “水合”——Framer 水合已完成（“没有白屏”的关键标志）；“外部”——向第三方服务器的
 请求；“推广”——Framer 徽章，包括模板购买按钮。
 
+## 📣 推广
+
+**GitHub 话题标签**——已设置在仓库上，通过这些标签可以在 GitHub 搜索中发现本项目：
+
+`framer` · `framer-website` · `framer-template` · `website-copier` · `site-downloader` · `website-cloner` · `web-archiving` · `browsertrix` · `webrecorder` · `static-site` · `docker` · `python` · `web-crawler` · `web-scraping` · `self-hosted` · `site-backup` · `web-archive` · `offline-first`
+
+**发帖用标签**（X/Twitter、Reddit 等）：
+
+```
+#framer #framerwebsite #webdev #python #docker #opensource
+#webarchiving #staticwebsite #selfhosted #websitecopier #开源
+```
+
 <div align="center">
 
 **面板 · ZIP · 自包含副本——全部本地运行，无需订阅**

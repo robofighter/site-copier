@@ -286,6 +286,19 @@ Not critical for the panel; for manual checks use `curl --noproxy '*'` and
 "Ext." — requests to third-party servers; "Promo" — Framer badges, including
 template purchase buttons.
 
+## 📣 Promotion
+
+**GitHub topics** — already set on the repo, that's how people discover it via GitHub search:
+
+`framer` · `framer-website` · `framer-template` · `website-copier` · `site-downloader` · `website-cloner` · `web-archiving` · `browsertrix` · `webrecorder` · `static-site` · `docker` · `python` · `web-crawler` · `web-scraping` · `self-hosted` · `site-backup` · `web-archive` · `offline-first`
+
+**Hashtags for posts** (X/Twitter, Reddit, etc.):
+
+```
+#framer #framerwebsite #webdev #python #docker #opensource
+#webarchiving #staticwebsite #selfhosted #websitecopier
+```
+
 <div align="center">
 
 **Panel · ZIP · self-contained copy — all local, no subscriptions**
