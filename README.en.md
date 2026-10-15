@@ -60,13 +60,88 @@ brew install orbstack && open -a OrbStack
 git clone https://github.com/robofighter/site-copier.git
 cd site-copier
 
-# 3. Start the panel (default port 8200; custom: PORT=9000)
+# 3. Browsertrix crawler image — REQUIRED (details in the section below)
+docker pull webrecorder/browsertrix-crawler:1.15.0
+
+# 4. Start the panel (default port 8200; custom: PORT=9000)
 python3 server.py
 
-# 4. Open in your browser → http://127.0.0.1:8200
+# 5. Open in your browser → http://127.0.0.1:8200
 ```
 
 Everything else happens in the panel: **URL → "Copy site" → wait for "done" → "Open" / "Download ZIP"**.
+
+> **Why the image is a required step.** It's not an add-on — it **is** the
+> crawler: without it the system physically cannot work, jobs fail with
+> "Failed to download the image". The panel will try to pull the image
+> automatically on the first job (the status badge shows "image not downloaded"
+> if that fails), but pulling it up front saves the first job from waiting for
+> a gigabyte download.
+
+## 🐳 Browsertrix crawler image — the key dependency
+
+**What it is.** `webrecorder/browsertrix-crawler:1.15.0` is the official
+container of the [Browsertrix](https://github.com/webrecorder/browsertrix)
+project (Webrecorder): it bundles Chromium and the crawler that walks the site
+**in a real browser**. It runs on every job (`crawler.py` → `docker run`), so
+Docker is not optional — it's a hard requirement.
+
+| Parameter | Value |
+|---|---|
+| Image | `webrecorder/browsertrix-crawler:1.15.0` |
+| Size (compressed) | ~1.03 GB (on disk with layers ~3.6 GB) |
+| Architecture | arm64 (Apple Silicon) / amd64 — Docker picks the right one |
+| Purpose | walking the site in a browser + recording WACZ |
+| Without it | jobs fail with "Failed to download the image", panel shows "image not downloaded" |
+
+<details open>
+<summary><b>Download the image</b></summary>
+
+```bash
+docker pull webrecorder/browsertrix-crawler:1.15.0
+```
+
+Verify it's present:
+
+```bash
+docker images webrecorder/browsertrix-crawler
+# or in detail:
+docker image inspect webrecorder/browsertrix-crawler:1.15.0
+```
+
+The panel checks the image itself too — the badge in the top-right corner
+("Docker ready" / "image not downloaded") and `GET /api/status`.
+</details>
+
+<details>
+<summary><b>Automatic download</b></summary>
+
+If the image is missing when a job starts, `crawler.py` runs `docker pull`
+itself and carries on. Convenient, but the first start will take as long as the
+download — so a manual `docker pull` up front is recommended.
+</details>
+
+<details>
+<summary><b>Offline / another machine: save and load the image as an archive</b></summary>
+
+```bash
+# save to a file (on a machine with internet)
+docker save webrecorder/browsertrix-crawler:1.15.0 | gzip > browsertrix-crawler.tar.gz
+
+# load from the file (on a machine without internet)
+gunzip -c browsertrix-crawler.tar.gz | docker load
+```
+</details>
+
+<details>
+<summary><b>If docker pull fails</b></summary>
+
+- Check that Docker is running (`docker info`) and the internet is reachable.
+- Behind a corporate proxy, set `HTTP_PROXY`/`HTTPS_PROXY` for the Docker
+  daemon (in OrbStack / Docker Desktop settings).
+- Free up space: ~4 GB needed on disk.
+- Alternative — carry the image archive over from another machine (see above).
+</details>
 
 <details>
 <summary><b>Deploying on a server / VPS</b></summary>
@@ -76,9 +151,23 @@ Everything else happens in the panel: **URL → "Copy site" → wait for "done" 
 sudo apt update && sudo apt install -y docker.io python3
 sudo usermod -aG docker $USER && newgrp docker
 git clone https://github.com/robofighter/site-copier.git && cd site-copier
+docker pull webrecorder/browsertrix-crawler:1.15.0   # crawler image — required
 PORT=8200 nohup python3 server.py > panel.log 2>&1 &
 # panel available at http://<server-ip>:8200
 ```
+</details>
+
+<details>
+<summary><b>Git: updating the project to the latest version</b></summary>
+
+```bash
+cd site-copier
+git pull                 # fetch updates from GitHub
+docker pull webrecorder/browsertrix-crawler:1.15.0   # if the image tag changed
+```
+
+The `jobs/`, `previews/`, `crawls/` folders are not tracked in git (see
+`.gitignore`) — `git pull` won't touch your jobs and copied sites.
 </details>
 
 ## 🧩 How it works
@@ -112,8 +201,8 @@ flowchart LR
 
 | What | Why | Required |
 |---|---|---|
-| **Docker** (OrbStack / Docker Desktop / docker-ce) | Run Browsertrix in a container | ✅ |
-| Image `webrecorder/browsertrix-crawler:1.15.0` | The crawler itself (pulled automatically on first job) | ✅ |
+| **Docker** (OrbStack / Docker Desktop / docker-ce) | Run the crawler in a container | ✅ |
+| **Image `webrecorder/browsertrix-crawler:1.15.0`** | **The crawler itself** — jobs don't work without it ([details](#-browsertrix-crawler-image--the-key-dependency)) | ✅ |
 | **Python 3.8+** | Panel and converter | ✅ |
 | pip packages | **none needed** — the whole codebase uses only the standard library | — |
 | Node.js + Playwright | only for automated browser checks of copies (external scripts) | ⬜ optional |

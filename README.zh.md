@@ -60,13 +60,85 @@ brew install orbstack && open -a OrbStack
 git clone https://github.com/robofighter/site-copier.git
 cd site-copier
 
-# 3. 启动面板（默认端口 8200，自定义：PORT=9000）
+# 3. Browsertrix 爬虫镜像 —— 必需（详见下方章节）
+docker pull webrecorder/browsertrix-crawler:1.15.0
+
+# 4. 启动面板（默认端口 8200，自定义：PORT=9000）
 python3 server.py
 
-# 4. 浏览器打开 → http://127.0.0.1:8200
+# 5. 浏览器打开 → http://127.0.0.1:8200
 ```
 
 其余操作都在面板里完成：**URL → "复制网站" → 等待"完成" → "打开" / "下载 ZIP"**。
+
+> **为什么镜像是必需步骤。** 它不是附加组件，而是**爬虫本体**：没有它系统
+> 根本无法工作，任务会以“下载镜像失败”报错。面板会在首个任务时尝试自动拉取
+> 镜像（失败时状态徽标显示“镜像未下载”），但最好提前拉好，免得第一个任务
+> 干等一个 GB 的下载。
+
+## 🐳 Browsertrix 爬虫镜像 —— 核心依赖
+
+**它是什么。** `webrecorder/browsertrix-crawler:1.15.0` 是
+[Browsertrix](https://github.com/webrecorder/browsertrix) 项目（Webrecorder）
+的官方容器：内含 Chromium 和在**真实浏览器**中遍历网站的爬虫。每个任务都会
+运行它（`crawler.py` → `docker run`），所以 Docker 不是可选项，而是硬性要求。
+
+| 参数 | 值 |
+|---|---|
+| 镜像 | `webrecorder/browsertrix-crawler:1.15.0` |
+| 大小（压缩后） | ~1.03 GB（含层在磁盘上约 3.6 GB） |
+| 架构 | arm64（Apple Silicon）/ amd64 —— Docker 自动选择 |
+| 用途 | 在浏览器中遍历网站 + 录制 WACZ |
+| 缺少它 | 任务报“下载镜像失败”，面板显示“镜像未下载” |
+
+<details open>
+<summary><b>下载镜像</b></summary>
+
+```bash
+docker pull webrecorder/browsertrix-crawler:1.15.0
+```
+
+验证镜像已就位：
+
+```bash
+docker images webrecorder/browsertrix-crawler
+# 或查看详情：
+docker image inspect webrecorder/browsertrix-crawler:1.15.0
+```
+
+面板也会自行检查镜像——右上角徽标（“Docker 就绪” / “镜像未下载”）
+以及 `GET /api/status`。
+</details>
+
+<details>
+<summary><b>自动下载</b></summary>
+
+如果任务启动时镜像缺失，`crawler.py` 会自行执行 `docker pull` 并继续工作。
+很方便，但首次启动会花上与下载相当的时间——因此建议提前手动
+`docker pull`。
+</details>
+
+<details>
+<summary><b>离线 / 换机器：用归档保存和加载镜像</b></summary>
+
+```bash
+# 保存为文件（在有网络的机器上）
+docker save webrecorder/browsertrix-crawler:1.15.0 | gzip > browsertrix-crawler.tar.gz
+
+# 从文件加载（在无网络的机器上）
+gunzip -c browsertrix-crawler.tar.gz | docker load
+```
+</details>
+
+<details>
+<summary><b>如果 docker pull 失败</b></summary>
+
+- 检查 Docker 是否已运行（`docker info`）以及网络是否可达。
+- 处于公司代理环境时，为 Docker 守护进程设置
+  `HTTP_PROXY`/`HTTPS_PROXY`（在 OrbStack / Docker Desktop 设置中）。
+- 清理磁盘空间：需要约 4 GB。
+- 替代方案——从另一台机器拷贝镜像归档（见上文）。
+</details>
 
 <details>
 <summary><b>部署到服务器 / VPS</b></summary>
@@ -76,9 +148,23 @@ python3 server.py
 sudo apt update && sudo apt install -y docker.io python3
 sudo usermod -aG docker $USER && newgrp docker
 git clone https://github.com/robofighter/site-copier.git && cd site-copier
+docker pull webrecorder/browsertrix-crawler:1.15.0   # 爬虫镜像 —— 必需
 PORT=8200 nohup python3 server.py > panel.log 2>&1 &
 # 面板地址：http://<服务器IP>:8200
 ```
+</details>
+
+<details>
+<summary><b>Git：更新项目到最新版本</b></summary>
+
+```bash
+cd site-copier
+git pull                 # 从 GitHub 拉取更新
+docker pull webrecorder/browsertrix-crawler:1.15.0   # 如果镜像标签有变
+```
+
+`jobs/`、`previews/`、`crawls/` 目录不受 git 跟踪（见 `.gitignore`）——
+`git pull` 不会影响你的任务和已复制的网站。
 </details>
 
 ## 🧩 工作原理
@@ -111,8 +197,8 @@ flowchart LR
 
 | 组件 | 用途 | 必需 |
 |---|---|---|
-| **Docker**（OrbStack / Docker Desktop / docker-ce） | 在容器中运行 Browsertrix | ✅ |
-| 镜像 `webrecorder/browsertrix-crawler:1.15.0` | 爬虫本体（首个任务时自动拉取） | ✅ |
+| **Docker**（OrbStack / Docker Desktop / docker-ce） | 在容器中运行爬虫 | ✅ |
+| **镜像 `webrecorder/browsertrix-crawler:1.15.0`** | **爬虫本体**——没有它任务无法运行（[详情](#-browsertrix-爬虫镜像--核心依赖)） | ✅ |
 | **Python 3.8+** | 面板与转换器 | ✅ |
 | pip 包 | **无需安装**——全部代码仅使用标准库 | — |
 | Node.js + Playwright | 仅用于副本的自动化浏览器检查（外部脚本） | ⬜ 可选 |

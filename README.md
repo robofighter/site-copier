@@ -60,13 +60,88 @@ brew install orbstack && open -a OrbStack
 git clone https://github.com/robofighter/site-copier.git
 cd site-copier
 
-# 3. Панель (порт по умолчанию 8200, можно свой: PORT=9000)
+# 3. Образ краулера Browsertrix — ОБЯЗАТЕЛЬНО (подробнее в разделе ниже)
+docker pull webrecorder/browsertrix-crawler:1.15.0
+
+# 4. Панель (порт по умолчанию 8200, можно свой: PORT=9000)
 python3 server.py
 
-# 4. Открыть в браузере → http://127.0.0.1:8200
+# 5. Открыть в браузере → http://127.0.0.1:8200
 ```
 
 Дальше всё через панель: **URL → «Скопировать сайт» → дождаться «готово» → «Открыть» / «Скачать ZIP»**.
+
+> **Почему образ — обязательный шаг.** Это не вспомогательный софт, а **сам
+> краулер**: без него система физически не может работать — задания падают с
+> ошибкой «Не удалось скачать образ». Панель попробует скачать образ
+> автоматически при первом задании (индикатор покажет «образ не скачан», если
+> не выйдет), но лучше скачать сразу, чтобы первое задание не ждало загрузку
+> гигабайта.
+
+## 🐳 Образ краулера Browsertrix — главная зависимость
+
+**Что это.** `webrecorder/browsertrix-crawler:1.15.0` — официальный контейнер
+проекта [Browsertrix](https://github.com/webrecorder/browsertrix) (Webrecorder):
+внутри — Chromium и краулер, который обходит сайт **в реальном браузере**.
+Именно он запускается на каждом задании (`crawler.py` → `docker run`), поэтому
+Docker — не опция, а необходимость.
+
+| Параметр | Значение |
+|---|---|
+| Образ | `webrecorder/browsertrix-crawler:1.15.0` |
+| Размер (сжатый) | ~1.03 ГБ (на диске со слоями ~3.6 ГБ) |
+| Архитектура | arm64 (Apple Silicon) / amd64 — Docker сам выберет нужную |
+| Зачем | обход сайта в браузере + запись WACZ |
+| Без него | задания падают с «Не удалось скачать образ», панель показывает «образ не скачан» |
+
+<details open>
+<summary><b>Скачать образ</b></summary>
+
+```bash
+docker pull webrecorder/browsertrix-crawler:1.15.0
+```
+
+Проверить, что образ на месте:
+
+```bash
+docker images webrecorder/browsertrix-crawler
+# или детально:
+docker image inspect webrecorder/browsertrix-crawler:1.15.0
+```
+
+Панель тоже проверяет образ сама — индикатор в правом верхнем углу
+(«Docker готов» / «образ не скачан») и `GET /api/status`.
+</details>
+
+<details>
+<summary><b>Автоматическая загрузка</b></summary>
+
+Если образ не найден при запуске задания, `crawler.py` сам выполнит
+`docker pull` и продолжит работу. Удобно, но первый старт замедлится на время
+загрузки — поэтому ручной `docker pull` заранее рекомендуется.
+</details>
+
+<details>
+<summary><b>Офлайн / другой компьютер: сохранить и загрузить образ архивом</b></summary>
+
+```bash
+# сохранить в файл (на машине с интернетом)
+docker save webrecorder/browsertrix-crawler:1.15.0 | gzip > browsertrix-crawler.tar.gz
+
+# загрузить из файла (на машине без интернета)
+gunzip -c browsertrix-crawler.tar.gz | docker load
+```
+</details>
+
+<details>
+<summary><b>Если docker pull падает</b></summary>
+
+- Проверьте, что Docker запущен (`docker info`) и есть интернет.
+- При корпоративном прокси настройте `HTTP_PROXY`/`HTTPS_PROXY` для демона
+  Docker (в настройках OrbStack / Docker Desktop).
+- Освободите место: на диске должно быть ~4 ГБ.
+- Альтернатива — перенос архива образа с другого компьютера (см. выше).
+</details>
 
 <details>
 <summary><b>Развёртывание на сервере / VPS</b></summary>
@@ -76,9 +151,23 @@ python3 server.py
 sudo apt update && sudo apt install -y docker.io python3
 sudo usermod -aG docker $USER && newgrp docker
 git clone https://github.com/robofighter/site-copier.git && cd site-copier
+docker pull webrecorder/browsertrix-crawler:1.15.0   # образ краулера — обязательно
 PORT=8200 nohup python3 server.py > panel.log 2>&1 &
 # панель доступна на http://<ip-сервера>:8200
 ```
+</details>
+
+<details>
+<summary><b>Git: обновление проекта до последней версии</b></summary>
+
+```bash
+cd site-copier
+git pull                 # забрать обновления с GitHub
+docker pull webrecorder/browsertrix-crawler:1.15.0   # если обновился тег образа
+```
+
+Папки `jobs/`, `previews/`, `crawls/` в git не идут (см. `.gitignore`) — при
+`git pull` ваши задания и копии сайтов не затрагиваются.
 </details>
 
 ## 🧩 Как это работает
@@ -112,8 +201,8 @@ flowchart LR
 
 | Что | Зачем | Обязательно |
 |---|---|---|
-| **Docker** (OrbStack / Docker Desktop / docker-ce) | Краулинг в контейнере Browsertrix | ✅ |
-| Образ `webrecorder/browsertrix-crawler:1.15.0` | Сам краулер (тянется автоматически при первом задании) | ✅ |
+| **Docker** (OrbStack / Docker Desktop / docker-ce) | Запуск краулера в контейнере | ✅ |
+| **Образ `webrecorder/browsertrix-crawler:1.15.0`** | **Сам краулер** — без него задания не работают ([подробнее](#-образ-краулера-browsertrix--главная-зависимость)) | ✅ |
 | **Python 3.8+** | Панель и конвертер | ✅ |
 | pip-пакеты | **не нужны** — весь код на стандартной библиотеке | — |
 | Node.js + Playwright | только для авто-проверки клонов (внешние скрипты) | ⬜ опционально |
