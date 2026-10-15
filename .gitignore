@@ -1,0 +1,19 @@
+# Артефакты рантайма — не в git
+jobs/
+crawls/
+previews/
+*.wacz
+*.warc.gz
+*.zip
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# Логи и временные файлы
+*.log
+.DS_Store
+Thumbs.db

@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Копировщик сайтов</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span class="logo">◧</span>
+    <div>
+      <h1>Копировщик сайтов</h1>
+      <p>Скачивает сайт и отдаёт готовую папку для хостинга</p>
+    </div>
+  </div>
+  <div id="env" class="env"><span class="dot"></span><span id="envText">проверка…</span></div>
+</header>
+
+<main>
+  <section class="card">
+    <h2>Новый сайт</h2>
+    <form id="form">
+      <label class="field wide">
+        <span>Адрес сайта</span>
+        <input id="url" type="text" placeholder="https://example.com" autocomplete="off" required>
+      </label>
+
+      <div class="grid">
+        <label class="field">
+          <span>Область обхода</span>
+          <select id="scope">
+            <option value="host" selected>Весь сайт (host)</option>
+            <option value="prefix">Раздел (prefix)</option>
+            <option value="domain">Домен и поддомены</option>
+            <option value="page">Только одна страница</option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Лимит страниц <em>0 = без лимита</em></span>
+          <input id="limit" type="number" value="0" min="0">
+        </label>
+
+        <label class="field">
+          <span>Параллельных браузеров</span>
+          <input id="workers" type="number" value="2" min="1" max="8">
+        </label>
+
+        <label class="field">
+          <span>Лимит времени, сек</span>
+          <input id="timeLimit" type="number" value="900" min="60" step="60">
+        </label>
+      </div>
+
+      <details class="advanced">
+        <summary>Дополнительно</summary>
+        <label class="field wide">
+          <span>Поведения (через запятую)</span>
+          <input id="behaviors" type="text" value="autoplay,autofetch,autoscroll,siteSpecific">
+        </label>
+        <label class="field wide">
+          <span>Скрыть элементы — CSS-селекторы, по одному в строке <em>бейджи Framer убираются автоматически</em></span>
+          <textarea id="hideSelectors" rows="3" placeholder="#cookie-banner&#10;.promo-popup"></textarea>
+        </label>
+      </details>
+
+      <button type="submit" id="submit">Скопировать сайт</button>
+    </form>
+  </section>
+
+  <section class="card">
+    <div class="cardHead">
+      <h2>Задания</h2>
+      <div class="headActions">
+        <button class="ghost" id="rescan" title="Перечитать задания с диска — после ручной пересборки копий">Перечитать</button>
+        <button class="ghost" id="refresh">Обновить</button>
+      </div>
+    </div>
+    <div id="jobs" class="jobs"><p class="empty">Пока пусто</p></div>
+  </section>
+</main>
+
+<script src="/app.js"></script>
+</body>
+</html>
